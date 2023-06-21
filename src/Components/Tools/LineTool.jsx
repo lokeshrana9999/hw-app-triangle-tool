@@ -210,7 +210,18 @@ export default class LineTool {
 						for (let l = 0; l < pointLines.length; l++) {
 							const line2 = pointLines[l];
 							if (line1 === line2) continue;
-							const angle = getAngleBetweenLines(line1, line2);
+							const referencePointIndexLine1 = line1.findIndex(
+								(innerPoint) =>
+									innerPoint.x === point.x &&
+									innerPoint.y === point.y
+							);
+							const referencePointIndexLine2 = line2.findIndex(
+								(innerPoint) =>
+									innerPoint.x === point.x &&
+									innerPoint.y === point.y
+							);
+
+							const angle = getAngleBetweenLines(line1, line2, referencePointIndexLine1, referencePointIndexLine2);
 
 							//Check if line1 and line2's angle already exists in anglesToBeDisplayed
 							const repeatAngle = anglesToBeDisplayed.filter(
@@ -240,8 +251,16 @@ export default class LineTool {
 							if (sameLines) continue;
 
 							//Calculate the points on either lines to display the arc
-							const arcP1 = getPointOnLine(line1, point, 100);
-							const arcP2 = getPointOnLine(line2, point, 100);
+							const arcP1 = getPointOnLine(
+								line1,
+								referencePointIndexLine1,
+								100
+							);
+							const arcP2 = getPointOnLine(
+								line2,
+								referencePointIndexLine2,
+								100
+							);
 							anglesToBeDisplayed.push({
 								angle: angle,
 								arcP1: arcP1,
@@ -257,9 +276,8 @@ export default class LineTool {
 				);
 				for (let k = 0; k < anglesToBeDisplayed.length; k++) {
 					const angle = anglesToBeDisplayed[k];
-					const properAngle = convertToSmallerPositiveAngle(
-						angle.angle
-					);
+					const properAngle = angle.angle;
+
 					console.log(
 						"🚀 ~ file: LineTool.jsx:232 ~ LineTool ~ SecondaryElements ~ angle:",
 						angle
