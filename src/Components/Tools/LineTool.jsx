@@ -221,7 +221,12 @@ export default class LineTool {
 									innerPoint.y === point.y
 							);
 
-							const angle = getAngleBetweenLines(line1, line2, referencePointIndexLine1, referencePointIndexLine2);
+							const angle = getAngleBetweenLines(
+								line1,
+								line2,
+								referencePointIndexLine1,
+								referencePointIndexLine2
+							);
 
 							//Check if line1 and line2's angle already exists in anglesToBeDisplayed
 							const repeatAngle = anglesToBeDisplayed.filter(
@@ -293,10 +298,10 @@ export default class LineTool {
 						<>
 							<path
 								key={`${i}-${j}-${k}`}
-								d={`M ${arcP1.x} ${arcP1.y} A 100 100 0 0 1 ${arcP2.x} ${arcP2.y}`}
-								stroke="neon"
+								d={`M ${arcP1.x} ${arcP1.y} A ${angleInDegrees} ${angleInDegrees}, 0 0 0, ${arcP2.x} ${arcP2.y} L ${point.x} ${point.y} Z`}
+								stroke="purple"
 								strokeWidth="2"
-								fill="none"
+								fill="purple"
 							/>
 							{/* <rect
 								key={`${i}-${j}-${k}-rect`}
@@ -311,7 +316,8 @@ export default class LineTool {
 								x={angleLabelX}
 								y={angleLabelY}
 								fontSize="20"
-								fill="flourescent"
+                                fontWeight={700}
+								fill="white"
 							>
 								{`${angleLabel}°`}
 							</text>
