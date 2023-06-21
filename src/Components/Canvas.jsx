@@ -96,7 +96,7 @@ const Canvas = (props) => {
 	};
 
 	const handlePointClick = (event) => {
-        event.stopPropagation();
+		event.stopPropagation();
 		const eventTarget = event.target;
 		const { cx, cy } = eventTarget.attributes;
 		const coordinates = {
@@ -106,18 +106,25 @@ const Canvas = (props) => {
 		handleOpenAreaClick(coordinates);
 	};
 
-	const elements = tools.map((tool) => {
-		return tool.Element(items);
-	});
+	const elements = useMemo(() => {
+		return tools.map((tool) => {
+			return tool.Element && tool.Element(items);
+		});
+	}, [items]);
 
-	const points = tools.map((tool) => {
-		return tool.PointElement(items, handlePointClick);
-	});
-	console.log("🚀 ~ file: Canvas.jsx:116 ~ points ~ points:", points)
-
+	const points = useMemo(() => {
+		return tools.map((tool) => {
+			return tool.PointElement && tool.PointElement(items, handlePointClick);
+		});
+	}, [items]);
 	const tempElements = useMemo(() => {
-		return activeTool?.TempStateElement(items, mousePosition);
-	}, [mousePosition]);
+		return activeTool?.TempStateElement && activeTool?.TempStateElement(items, mousePosition);
+	}, [mousePosition, items]);
+
+    const secondaryElements = useMemo(() => {
+        return activeTool?.SecondaryElements && activeTool?.SecondaryElements(items, mousePosition);
+    }, [mousePosition, items]);
+    console.log("🚀 ~ file: Canvas.jsx:127 ~ secondaryElements ~ secondaryElements:", secondaryElements)
 	return (
 		<div className="canvas-wrapper">
 			<svg
@@ -135,14 +142,17 @@ const Canvas = (props) => {
 					return element;
 				})}
 				{points.map((element) => {
-                    // console.log("🚀 ~ file: Canvas.jsx:139 ~ {points.map ~ element:", element)
-                    // // element.onClick = handlePointClick;
-                    // element.props = {
-                    //     ...element.props,
-                    //     onClick: handlePointClick,
-                    // }
+					// // element.onClick = handlePointClick;
+					// element.props = {
+					//     ...element.props,
+					//     onClick: handlePointClick,
+					// }
 					return element;
 				})}
+                {secondaryElements?.map((element) => {
+                    return element;
+                })}
+                
 			</svg>
 		</div>
 	);

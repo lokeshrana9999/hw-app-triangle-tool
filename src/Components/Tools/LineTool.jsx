@@ -1,5 +1,11 @@
 import { ReactComponent as LineIcon } from "../../icons/line-icon.svg";
-
+import {
+	getAngleBetweenLines,
+	getPointOnLine,
+	convertToSmallerPositiveAngle,
+	getAbsoluteDifferenceBetweenAngles,
+	compareLines,
+} from "../Utils/misc";
 export default class LineTool {
 	constructor() {
 		this.icon = LineIcon;
@@ -9,7 +15,6 @@ export default class LineTool {
 	}
 
 	onOpenAreaClick(coordinates, items) {
-        console.log("🚀 ~ file: LineTool.jsx:13 ~ LineTool ~ onOpenAreaClick ~ this.tempState:", this.tempState)
 		if (!this.tempState) {
 			// Add a new point to the
 			items.lines.push([coordinates]);
@@ -75,7 +80,7 @@ export default class LineTool {
 						cy={point.y}
 						r="5"
 						fill="blue"
-                        onClick={handlePointClick}
+						onClick={handlePointClick}
 						// onClick={(event) => {
 						// 	event.stopPropagation();
 						// 	this.onClickPoint(point, items, setItems);
@@ -85,13 +90,8 @@ export default class LineTool {
 				);
 			}
 		}
-        return elements;
+		return elements;
 	}
-
-	onElementClick() {
-		// No state changes for the Line Tool on element clicks.
-	}
-
 	TempStateElement(items, currCursorPos) {
 		const lines = items?.lines;
 		if (!lines) return null;
@@ -144,24 +144,192 @@ export default class LineTool {
 		return elements;
 	}
 
-	// onClickPoint(coordinates, items, setItems) {
-	// 	console.log("🚀 ~ file: LineTool.jsx:146 ~ LineTool ~ onClickPoint ~ coordinates:", items, this.tempState, coordinates)
-	// 	if (this.tempState) {
-	// 		//Find current point index
-	// 		const index = items.lines.findIndex(
-	// 			(line) => line[0] === this.lastPoint
-	// 		);
+	SecondaryElements(items) {
+		//TODO: Calculate the length of each line and display it
+		let tiltLabels = [];
+		let angleLabels = [];
+		const lines = items?.lines;
+		if (!lines) return null;
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+			if (line.length < 2) continue;
+			const length = Math.sqrt(
+				Math.pow(line[1].x - line[0].x, 2) +
+					Math.pow(line[1].y - line[0].y, 2)
+			);
+			const tilt = Math.atan(
+				(line[1].y - line[0].y) / (line[1].x - line[0].x)
+			);
+			const lengthLabel = length.toFixed(2);
 
-	// 		// Add the clicked point to the last line segment and finalize it.
-	// 		items.lines[index].push(coordinates);
-	// 		this.tempState = false;
-    //         setItems(items);
-	// 	} else {
-	// 		// Start a new line segment with the clicked point.
-	// 		items.lines.push([coordinates]);
-	// 		this.tempState = true;
-	// 		this.lastPoint = coordinates;
-    //         setItems(items);
-	// 	}
-	// }
+			tiltLabels.push(
+				<>
+					<rect
+						key={`${i}-rect`}
+						x={(line[0].x + line[1].x) / 2 - 20}
+						y={(line[0].y + line[1].y) / 2 - 20}
+						width={40 + (lengthLabel.length + 3) * 10}
+						height="23"
+						fill="red"
+					/>
+					<text
+						key={i}
+						x={(line[0].x + line[1].x) / 2}
+						y={(line[0].y + line[1].y) / 2}
+						fontSize="20"
+						fill="white"
+						// transform={`rotate(${tilt * 180 / Math.PI}, ${(line[0].x + line[1].x) / 2}, ${(line[0].y + line[1].y) / 2})`}
+					>
+						{`${lengthLabel} cm`}
+					</text>
+				</>
+			);
+		}
+		//TODO: Create line sets for common points and calculate the angle between them
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+			if (line.length < 2) continue;
+			for (let j = 0; j < line.length; j++) {
+				const point = line[j];
+				let pointLines = [];
+				for (let k = 0; k < lines.length; k++) {
+					const line2 = lines[k];
+					if (line2.length < 2) continue;
+					for (let l = 0; l < line2.length; l++) {
+						const point2 = line2[l];
+						if (point2.x === point.x && point2.y === point.y) {
+							//Found the point
+							pointLines.push(lines[k]);
+						}
+					}
+				}
+				let anglesToBeDisplayed = [];
+				if (pointLines.length > 1) {
+					for (let k = 0; k < pointLines.length; k++) {
+						const line1 = pointLines[k];
+						for (let l = 0; l < pointLines.length; l++) {
+							const line2 = pointLines[l];
+							if (line1 === line2) continue;
+							const angle = getAngleBetweenLines(line1, line2);
+
+							//Check if line1 and line2's angle already exists in anglesToBeDisplayed
+							const repeatAngle = anglesToBeDisplayed.filter(
+								(angleToBeDisplayed) =>
+									getAbsoluteDifferenceBetweenAngles(
+										angleToBeDisplayed.angle,
+										angle
+									) === 0
+							);
+							let sameLines = false;
+							if (repeatAngle.length > 0) {
+								for (let m = 0; m < repeatAngle.length; m++) {
+									const angleToBeDisplayed = repeatAngle[m];
+									const angleToBeDisplayedLines =
+										angleToBeDisplayed.lines;
+									sameLines =
+										compareLines(
+											angleToBeDisplayedLines[0],
+											line2
+										) &&
+										compareLines(
+											angleToBeDisplayedLines[1],
+											line1
+										);
+								}
+							}
+							if (sameLines) continue;
+
+							//Calculate the points on either lines to display the arc
+							const arcP1 = getPointOnLine(line1, point, 100);
+							const arcP2 = getPointOnLine(line2, point, 100);
+							anglesToBeDisplayed.push({
+								angle: angle,
+								arcP1: arcP1,
+								arcP2: arcP2,
+								lines: [line1, line2],
+							});
+						}
+					}
+				}
+				console.log(
+					"🚀 ~ file: LineTool.jsx:227 ~ LineTool ~ SecondaryElements ~ anglesToBeDisplayed:",
+					anglesToBeDisplayed
+				);
+				for (let k = 0; k < anglesToBeDisplayed.length; k++) {
+					const angle = anglesToBeDisplayed[k];
+					const properAngle = convertToSmallerPositiveAngle(
+						angle.angle
+					);
+					console.log(
+						"🚀 ~ file: LineTool.jsx:232 ~ LineTool ~ SecondaryElements ~ angle:",
+						angle
+					);
+					const angleInDegrees = (properAngle * 180) / Math.PI;
+					const angleLabel = angleInDegrees.toFixed(1);
+					const arcP1 = angle.arcP1;
+					const arcP2 = angle.arcP2;
+					const angleLabelX = (arcP1.x + arcP2.x) / 2;
+					const angleLabelY = (arcP1.y + arcP2.y) / 2;
+					const angleLabelLength = angleLabel.length + 1;
+					angleLabels.push(
+						<>
+							<path
+								key={`${i}-${j}-${k}`}
+								d={`M ${arcP1.x} ${arcP1.y} A 100 100 0 0 1 ${arcP2.x} ${arcP2.y}`}
+								stroke="neon"
+								strokeWidth="2"
+								fill="none"
+							/>
+							{/* <rect
+								key={`${i}-${j}-${k}-rect`}
+								x={angleLabelX - 20}
+								y={angleLabelY - 20}
+								width={40 + angleLabelLength * 10}
+								height="23"
+								fill="flourescent"
+							/> */}
+							<text
+								key={`${i}-${j}-${k}-text`}
+								x={angleLabelX}
+								y={angleLabelY}
+								fontSize="20"
+								fill="flourescent"
+							>
+								{`${angleLabel}°`}
+							</text>
+							<circle
+								key={`${i}-${j}`}
+								cx={arcP1.x}
+								cy={arcP1.y}
+								r="5"
+								fill="maroon"
+								// onClick={handlePointClick}
+								// onClick={(event) => {
+								// 	event.stopPropagation();
+								// 	this.onClickPoint(point, items, setItems);
+								// }}
+								zIndex="100"
+							/>
+							<circle
+								key={`${i}-${j}`}
+								cx={arcP2.x}
+								cy={arcP2.y}
+								r="5"
+								fill="maroon"
+								// onClick={handlePointClick}
+								// onClick={(event) => {
+								// 	event.stopPropagation();
+								// 	this.onClickPoint(point, items, setItems);
+								// }}
+								zIndex="100"
+							/>
+						</>
+					);
+				}
+			}
+		}
+		//TODO:
+
+		return [tiltLabels, angleLabels];
+	}
 }

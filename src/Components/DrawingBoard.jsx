@@ -20,10 +20,9 @@ const DrawingBoard = () => {
 	// Function to handle clicks on the drawing board's open area.
 	const handleOpenAreaClick = (coordinates) => {
 		if (activeTool) {
-			const modifiedItems = activeTool.onOpenAreaClick(
-				coordinates,
-				items
-			);
+			const modifiedItems =
+				activeTool.onOpenAreaClick &&
+				activeTool.onOpenAreaClick(coordinates, items);
 			setItems({ ...modifiedItems });
 		}
 		// if (state.activeTool) {
@@ -55,7 +54,7 @@ const DrawingBoard = () => {
 				activeTool={activeTool}
 				items={items}
 				handleOpenAreaClick={handleOpenAreaClick}
-                setItems={setItems}
+				setItems={setItems}
 			/>
 		</div>
 	);
